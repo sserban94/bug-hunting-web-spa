@@ -63,9 +63,6 @@ function isMember(){
             onChange={(e) => setPassword(e.target.value)}
           />
         </Form.Group>
-        <Button onClick="isMember" block size="lg" type="submit" disabled={!validateForm()} >
-          Login as team member
-        </Button>
         <Button block size="lg" type="submit" disabled={!validateForm()}>
           Login as tester
         </Button>
