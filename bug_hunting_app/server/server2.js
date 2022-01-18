@@ -5,6 +5,11 @@ const moment = require('moment')        // for token expiration
 var Sequelize = require('sequelize');
 const { body, validationResult } = require('express-validator');
 
+// ONE WAY TO VALIDATE EMAIL - REGEX
+function validateEmail(email) {
+    const re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+    return re.test(String(email).toLowerCase());
+}
 
 const DB_NAME = 'bugtracking'
 const DB_USER = 'webtechMaster'
@@ -130,8 +135,12 @@ apiRouter.use(async (req, res, next) => {
 
 adminRouter.post('/users', async (req, res) => {
     try {
+        if (validateEmail(req.body.email) && req.body.password.length > 6) {
         await User.create(req.body)
         res.status(201).json({ message: 'created' })
+        } else {
+            res.status(418).json({ message: 'wrong credentials. need email format & password length > 6'})
+        }
 
     } catch (err) {
         console.warn(err)
