@@ -3,14 +3,14 @@ const bodyParser = require('body-parser')
 const crypto = require('crypto')        // 4 tokens
 const moment = require('moment')        // for token expiration
 var Sequelize = require('sequelize');
-
+const { body, validationResult } = require('express-validator');
 
 
 const DB_NAME = 'bugtracking'
 const DB_USER = 'webtechMaster'
 const DB_PASSWORD = 'webtechMaster'
 
-const TOKEN_TIMEOUT = 60
+const TOKEN_TIMEOUT = 600
 
 const sequelize = new Sequelize(DB_NAME, DB_USER, DB_PASSWORD, {
     host: '127.0.0.1',
@@ -146,6 +146,8 @@ adminRouter.post('/users', async (req, res) => {
 authRouter.post('/login', async (req, res) => {
     try {
         const credentials = req.body
+        
+
         const user = await User.findOne({
             where: {
                 email: credentials.email,
@@ -297,13 +299,11 @@ apiRouter.post('/users/:uid/projects', async (req, res, next) => {
         const project = await Project.create(req.body)
         const user = await User.findByPk(req.params.uid)
 
-
         if (user) {
             const token = req.headers.auth
             console.warn(token)
             console.warn(user.token)
             if (user.token === token) {
-
                 const permission = new Permission()
                 permission.permType = 'read'
                 permission.userId = user.id
@@ -345,8 +345,69 @@ apiRouter.get('/users/:uid/projects/:pid', permMiddleWare, async (req, res, next
 
 
 // show all projects related to connected 
+apiRouter.get('/users/:uid/projects', async(req, res, next) => {
+    try {
+        const user = await User.findByPk(req.params.uid)
+        if (user){
+            const token = req.headers.auth
+            if (user.token === token){
+                const projects = await Project.findAll({where: {id: user.projectId}, include: [Bug, User]})      // if this doesn't work remove getter
+                res.status(200).json(projects)
+            } else {
+                res.status(401).json({ message: 'not authorized' })
+            }
+        } else {
+            res.status(404).json({ message: 'not found' })
+        }
+    } catch (err){
+        console.warn(err)
+        res.status(500).json({ message: 'some error occured' })
+    }
+})
+
+// if tester show all projects
+app.get('/projects', async (req, res) => {
+    try {
+        const projects = await Project.findAll({ include: [Bug, User] })
+        res.status(200).json(projects)
+    } catch (err) {
+        console.warn(err)
+        res.status(500).json({ message: 'some error occured' })
+    }
+})
+
 
 // if not connected to project in db - PUT /projects/:pid/ - verify if tester or dev
+
+apiRouter.put('/users/:uid/projects/:pid', async (req, res, next) => {
+    try {
+        const project = await Project.findByPk(req.params.pid)
+        const user = await User.findByPk(req.params.uid)
+        if (user !== null && project != null) {
+            const token = req.headers.auth
+            if (user.token === token) {
+                if (user.projectId === project.id) {
+                    //await project.update(req.body, { fields: ['repository', 'description']})    // if let change both fields
+                    project.description = req.body.description
+                    project.save()
+                    res.status(202).json({ message: 'accepted' })
+                } else {
+                    res.status(401).json({ message: 'you are not part of this project. you are not authorized to make changes' })
+                }
+            } else {
+                res.status(401).json({ message: 'not authorized' })
+            }
+        }   else {
+            res.status(404).json({ message: 'not found' })
+        }
+    } catch (err) {
+        res.status(500).json({ message: 'some error occured' })
+    }
+})
+
+
+
+
 // if not connected to project in db - POST /projects/:pid/ - req body cu bug status description - if bug
 //          auto add as pending
 // if - POST /
