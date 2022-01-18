@@ -36,10 +36,6 @@ const Bug = sequelize.define('bugs', {
     description: Sequelize.TEXT
 })
 
-// in order to control access
-// const Resource = sequelize.define('resource',{
-//     content: Sequelize.STRING
-// })
 
 const Permission = sequelize.define('permission', {
     permType: Sequelize.ENUM('read')
@@ -265,8 +261,8 @@ app.get('/projects/:pid/users', async (req, res) => {
     }
 })
 
-// JUST FOR TEST - this would create an user and add him to the project
-app.post('/projects/:pid/users', async (req, res) => {
+// JUST FOR TEST - whis will add a user to a project by email
+apiRouter.post('/projects/:pid/users', async (req, res) => {
     try {
         const project = await Project.findByPk(req.params.pid)
         if (project) {
@@ -300,18 +296,29 @@ apiRouter.post('/users/:uid/projects', async (req, res, next) => {
     try {
         const project = await Project.create(req.body)
         const user = await User.findByPk(req.params.uid)
-        if (user) {
-            const permission = new Permission()
-            permission.permType = 'read'
-            permission.userId = user.id
-            permission.projectId = project.id
-            user.projectId = project.id
-            await user.save()
-            await project.save()
-            await permission.save()
-            res.status(201).json({ message: 'created' })
 
-        } else {
+
+        if (user) {
+            const token = req.headers.auth
+            console.warn(token)
+            console.warn(user.token)
+            if (user.token === token) {
+
+                const permission = new Permission()
+                permission.permType = 'read'
+                permission.userId = user.id
+                permission.projectId = project.id
+                user.projectId = project.id
+                await user.save()
+                await project.save()
+                await permission.save()
+                res.status(201).json({ message: 'created' })
+            } else {
+                res.status(401).json({ message: 'you lack the authorith to play around with someone else s data' })
+            }
+        }
+
+        else {
             res.status(401).json({ message: 'you shall not pass' })
         }
 
