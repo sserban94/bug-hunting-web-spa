@@ -36,9 +36,13 @@ const Project = sequelize.define('projects', {
     description: Sequelize.TEXT
 })
 
+// Bug-ul conține o severitate, o prioritate de rezolvare, o descriere și un link la commit-ul
 const Bug = sequelize.define('bugs', {
     status: Sequelize.STRING,
-    description: Sequelize.TEXT
+    severity: Sequelize.STRING,
+    priority: Sequelize.STRING,
+    description: Sequelize.TEXT,
+    link: Sequelize.STRING
 })
 
 
@@ -131,15 +135,20 @@ apiRouter.use(async (req, res, next) => {
     }
 })
 
-// TODO - check if email exists - res status already exists
-
+// No duplicate entried - DONE
 adminRouter.post('/users', async (req, res) => {
     try {
         if (validateEmail(req.body.email) && req.body.password.length > 6) {
-        await User.create(req.body)
-        res.status(201).json({ message: 'created' })
+            const user = await User.findOne({ where: { email: req.body.email } })
+            console.warn(user)
+            if (!user){
+                await User.create(req.body)
+                res.status(201).json({ message: 'created' })
+            } else {
+                res.status(409).json({ message: 'conflict - email already used'})
+            }
         } else {
-            res.status(418).json({ message: 'wrong credentials. need email format & password length > 6'})
+            res.status(418).json({ message: 'wrong credentials. need email format & password length > 6' })
         }
 
     } catch (err) {
@@ -155,7 +164,7 @@ adminRouter.post('/users', async (req, res) => {
 authRouter.post('/login', async (req, res) => {
     try {
         const credentials = req.body
-        
+
 
         const user = await User.findOne({
             where: {
@@ -301,18 +310,18 @@ apiRouter.post('/projects/:pid/users', async (req, res) => {
     }
 })
 
+//------------------------------------------------------------xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx----------------------------------------------------
 
-// here - from the moment one adds a project, that project is his
+// here - from the moment one adds a project, that project is his      -- I  think this should be changed - no duplicates check by repo name
 apiRouter.post('/users/:uid/projects', async (req, res, next) => {
     try {
-        const project = await Project.create(req.body)
         const user = await User.findByPk(req.params.uid)
-
         if (user) {
             const token = req.headers.auth
             console.warn(token)
             console.warn(user.token)
             if (user.token === token) {
+                const project = await Project.create(req.body)
                 const permission = new Permission()
                 permission.permType = 'read'
                 permission.userId = user.id
@@ -323,7 +332,7 @@ apiRouter.post('/users/:uid/projects', async (req, res, next) => {
                 await permission.save()
                 res.status(201).json({ message: 'created' })
             } else {
-                res.status(401).json({ message: 'you lack the authorith to play around with someone else s data' })
+                res.status(401).json({ message: 'you lack the authority to play around with someone else s data' })
             }
         }
 
@@ -354,13 +363,13 @@ apiRouter.get('/users/:uid/projects/:pid', permMiddleWare, async (req, res, next
 
 
 // show all projects related to connected 
-apiRouter.get('/users/:uid/projects', async(req, res, next) => {
+apiRouter.get('/users/:uid/projects', async (req, res, next) => {
     try {
         const user = await User.findByPk(req.params.uid)
-        if (user){
+        if (user) {
             const token = req.headers.auth
-            if (user.token === token){
-                const projects = await Project.findAll({where: {id: user.projectId}, include: [Bug, User]})      // if this doesn't work remove getter
+            if (user.token === token) {
+                const projects = await Project.findAll({ where: { id: user.projectId }, include: [Bug, User] })      // if this doesn't work remove getter
                 res.status(200).json(projects)
             } else {
                 res.status(401).json({ message: 'not authorized' })
@@ -368,7 +377,7 @@ apiRouter.get('/users/:uid/projects', async(req, res, next) => {
         } else {
             res.status(404).json({ message: 'not found' })
         }
-    } catch (err){
+    } catch (err) {
         console.warn(err)
         res.status(500).json({ message: 'some error occured' })
     }
@@ -395,7 +404,7 @@ apiRouter.put('/users/:uid/projects/:pid', async (req, res, next) => {
         if (user !== null && project != null) {
             const token = req.headers.auth
             if (user.token === token) {
-                if (user.projectId === project.id) {
+                if (user.projectId === project.id) {            // TODO - this should be changed => let user change repo as well
                     //await project.update(req.body, { fields: ['repository', 'description']})    // if let change both fields
                     project.description = req.body.description
                     project.save()
@@ -406,7 +415,7 @@ apiRouter.put('/users/:uid/projects/:pid', async (req, res, next) => {
             } else {
                 res.status(401).json({ message: 'not authorized' })
             }
-        }   else {
+        } else {
             res.status(404).json({ message: 'not found' })
         }
     } catch (err) {
@@ -419,20 +428,110 @@ apiRouter.put('/users/:uid/projects/:pid', async (req, res, next) => {
 
 // if not connected to project in db - POST /projects/:pid/ - req body cu bug status description - if bug
 //          auto add as pending
-// if - POST /
-// GET /bugs/  - verify which projects - 
-// USER HAS MANY BUGS
+apiRouter.post('/users/:uid/projects/:pid/bugs', async (req, res, next) => {
+    try {
+        const user = await User.findByPk(req.params.uid)
+        const project = await Project.findByPk(req.params.pid)
+        if (user != null && project != null) {
+            const token = req.headers.auth
+            if (user.token === token) {
+                // if the user is a member of the project
+                if (user.projectId === project.id) {
+                    res.status(401).json({ message: 'not authorized. only testers are allowed to create bugs' })
+                } else {
+                    // add only description - status added automatically
+                    const bug = req.body
+                    bug.status = 'pending'
+                    bug.projectId = project.id
+                    console.warn(bug)   // test this
+                    await Bug.create(bug)
+                    res.status(200).json({ message: 'created' })
+                }
+            } else {
+                res.status(401).json({ message: 'you lack the authority to play around with someone else s data' })
+            }
+        } else {
+            res.status(404).json({ message: 'not found' })
+        }
 
-// BUGS - pending, allocated, solved
+    } catch (err) {
+        console.warn(err)
+        res.status(500).json({ message: 'some error occured' })
+    }
+})
 
-// Ca student trebuie să pot sa ma conectez la aplicație cu un cont bazat pe o adresă de email.
-// DONE
 
-// Ca student membru în echipa unui proiect (MP) pot să înregistrez un proiect software pentru a fi monitorizat prin aplicație, specificând repository-ul proiectului și echipa de proiect.
-// POST /projects - must be auth - auto join with project
+// let members edit bugs - "SOLVE them" -> Testers can't change their status, they can only add them
+apiRouter.put('/users/:uid/projects/:pid/bugs/:bid', async (req, res, next) => {
+    try {
+        const user = await User.findByPk(req.params.uid)
+        const project = await Project.findByPk(req.params.pid)
+        const bug = await Bug.findByPk(req.params.bid)
+        if (user != null && project != null) {
+            const token = req.headers.auth
+            if (user.token === token) {
+                // if the user is a member of the project
+                if (user.projectId === project.id) {
+                    // if the bug exists and it is linked in the specified project then change it
+                    if (bug && bug.projectId === project.id) {
+                        // I THINK HERE THE STATUS SHOULD BE HANDLED IN THE FRONT END - user should be able to select if allocated / solved
+                        await bug.update(req.body)
+                        res.status(202).json({ message: 'accepted' })
+                    } else {
+                        res.status(404).json({ message: 'bug not found' })
+                    }
+                    // else
+                } else {
+                    res.status(401).json({ message: 'not authorized. sorry, testers can only create bugs' })
+                }
+            } else {
+                res.status(401).json({ message: 'you lack the authority to play around with someone else s data' })
+            }
+        } else {
+            res.status(404).json({ message: 'not found' })
+        }
 
-// Ca student care nu face parte dintr-un proiect înregistrat pot să mă adaug ca tester (TST) la proiect.
+    } catch (err) {
+        console.warn(err)
+        res.status(500).json({ message: 'some error occured' })
+    }
+})
 
+
+
+// GET /bugs/   
+apiRouter.get('/projects/:pid/bugs', async (req, res) => {
+    try {
+        const project = await Project.findByPk(req.params.pid)
+        if (project) {
+
+            // THIS VARIANT is with authorization. let only the users associated with the project see the bugs
+            // const token = req.headers.token
+            // const user = await User.findOne({ where: { token: token } })
+            // if (user.projectId === project.id) {
+            //     const bugs = await Bug.findAll({ where: { projectId: project.id }, include: Project })      // if this doesn't work remove getter
+            //     res.status(200).json(bugs)
+            // } else {
+            //     res.status(401).json({ message: 'not authorized' })
+            // }
+
+            // THIS VARIANT is without authorization. let all users see all bugs for all projects available
+            const bugs = await Bug.findAll({ where: { projectId: project.id }})      // if this doesn't work remove getter
+            console.warn(bugs.projectId)
+            console.warn(project.id)
+            res.status(200).json(bugs)
+
+        } else {
+            res.status(404).json({ message: 'not found' })
+        }
+    } catch (err) {
+        console.warn(err)
+        res.status(500).json({ message: 'some error occured' })
+    }
+})
+
+
+// USER HAS MANY BUGS                   -- TODO - should join bugs and users. bugs should have a user assigned to them but don't really like the idea
 
 // Ca TST pot înregistra un bug în aplicație. Bug-ul conține o severitate, o prioritate de rezolvare, o descriere și un link la commit-ul la care se referă.
 
