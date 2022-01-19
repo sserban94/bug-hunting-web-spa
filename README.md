@@ -22,5 +22,5 @@ The application must ensure bug-fixing related communication between team member
 > As a PM, after solving a bug, i can add a status to the solution with a link to the commit through which the bug was fixed.  
 > The application has  a permission system. A PM can add and modify a project, can change the status of a bug. A TST can add a bug.  
 
-##Examples:
-###Bugzilla
+## Examples:
+### Bugzilla
