@@ -1,4 +1,4 @@
-# bug-hunting-web-spa ## (work in progress)
+# bug-hunting-web-spa ## (work in progress) - ReactJS App with NodeJS & Express backend REST API + MySQL
 
 *Final Project for Web Technologies - Faculty of Cybernetics, Statistics and Economic Informatics in Bucharest*
 
