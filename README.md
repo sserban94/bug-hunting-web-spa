@@ -10,10 +10,11 @@
 Developing a web application which provides bug management for an application.
 
 ## Description
-The application must ensure bug-fixing related communication between team members of an application.
-
-> The application is built on a Single Page Application architecture and is accessible from the browser on the desktop, mobile devices or tablets (depending on user preference).
+The application must ensure bug-fixing related communication between team members of an application.  
+The application is built on a Single Page Application architecture and is accessible from the browser on the desktop, mobile devices or tablets (depending on user preference).  
+  
 > (Minimal) functionality  
+  
 > As a student i can connect to the application with an account based on an email address.  
 > As a student member of a project team (PM) i can register a software project in the bug tracking application, specifying a description, the repository where the project is > > > hosted and the project team.  
 > As a student that is not a member of the project team i can register as a tester (TST) for the project  
