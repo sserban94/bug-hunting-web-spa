@@ -7,12 +7,12 @@ export const DELETE_BUG = 'DELETE_BUG'
 
 
 // action has payload and type
-
+// Need project id
 export function getBugs() {
     return {
         type: GET_BUGS,
         payload: async () => {
-            const response = await fetch(`${SERVER}/bugs`)
+            const response = await fetch(`${SERVER}/${projectId}/bugs`)
             const data = await response.json()
             return data;
         }
@@ -23,14 +23,14 @@ export function addBug(bug) {
     return {
         type: ADD_BUG,
         payload: async () => {
-            let response = await fetch(`${SERVER}/bugs`, {
+            let response = await fetch(`${SERVER}/users/${userId}/projects/${projectId}bugs`, {
                 method: 'post',
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify(bug)
             })
-            response = await fetch(`${SERVER}/bugs`)
+            response = await fetch(`${SERVER}/${projectId}/bugs`)
             const data = await response.json()
             return data
         }
@@ -41,7 +41,7 @@ export function updateBug(bugId, bug) {
     return {
         type: UPDATE_BUG,
         payload: async () => {
-            await fetch(`${SERVER}/bugs/${bugId}`, {
+            await fetch(`${SERVER}/users/${userId}/projects/${projectId}/bugs/${bugId}`, {
                 method: 'put',
                 headers: {
                     'Content-Type': 'application/json'
