@@ -1,5 +1,5 @@
-# bug-hunting-web-spa
-## (work in progress)
+# bug-hunting-web-spa ## (work in progress)
+
 *Final Project for Web Technologies - Faculty of Cybernetics, Statistics and Economic Informatics in Bucharest*
 
 # **Web application for bug tracking**
