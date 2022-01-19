@@ -3,13 +3,13 @@
 
 *Final Project for Web Technologies - Faculty of Cybernetics, Statistics and Economic Informatics in Bucharest*
 
-# **Web application for bug tracking**
+## **Web application for bug tracking**
 
-# Objective
+## Objective
 
 Developing a web application which provides bug management for an application.
 
-# Description
+## Description
 The application must ensure bug-fixing related communication between team members of an application.
 
 > The application is built on a Single Page Application architecture and is accessible from the browser on the desktop, mobile devices or tablets (depending on user preference).
