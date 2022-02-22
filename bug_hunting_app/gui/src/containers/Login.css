@@ -1,0 +1,37 @@
+@media all and (min-width: 480px) {
+    .Login {
+      padding: 60px 0;
+    }
+  
+    .Login form {
+      margin: 0 auto;
+      max-width: 320px;
+    }
+
+  }
+    .loginButton{
+      margin: 20px;
+      margin-bottom: 0px;
+      text-align: center;
+      justify-content: center;
+      align-self: center;
+      border-width: 0;
+    }
+
+    .text1{
+      text-align: center;
+      color:black;
+      margin-top: 60px;
+      margin-bottom: 40px;
+      margin-left: 10%;
+      margin-right: 10%;
+    }
+
+    .text2{
+      text-align: center;
+      color:mediumvioletred;
+      
+      margin-bottom: 40px;
+      margin-left: 10%;
+      margin-right: 10%;
+    }
